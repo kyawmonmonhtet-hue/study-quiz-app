@@ -11,56 +11,59 @@ const generateBtn = document.getElementById('generate-btn');
 let currentQuestionIndex = 0;
 let score = 0;
 let lives = 3;
-let questions = []; // Starts empty like Gizmo!
+let questions = [];
 
-// MAGIC FUNCTION: Turns text into Questions
+// This function makes the quiz start!
 generateBtn.addEventListener('click', () => {
-    const text = noteInput.value;
+    const text = noteInput.value.trim();
+    if (!text) {
+        alert("Please paste some notes first!");
+        return;
+    }
+
     const lines = text.split('\n');
-    
     questions = lines.map(line => {
-        const [q, a] = line.split(':');
-        if (q && a) {
+        const parts = line.split(':');
+        if (parts.length >= 2) {
             return {
-                question: `What is ${q.trim()}?`,
+                question: `What is ${parts[0].trim()}?`,
                 answers: [
-                    { text: a.trim(), correct: true },
+                    { text: parts[1].trim(), correct: true },
                     { text: 'A type of software', correct: false },
-                    { text: 'A hardware brand', correct: false },
-                    { text: 'I don't know', correct: false }
+                    { text: 'A hardware component', correct: false },
+                    { text: 'None of the above', correct: false }
                 ],
-                explanation: `${q.trim()} is defined as: ${a.trim()}`
+                explanation: `${parts[0].trim()} means: ${parts[1].trim()}`
             };
         }
-    }).filter(item => item !== undefined);
+    }).filter(q => q !== undefined);
 
     if (questions.length > 0) {
-        alert("Quiz Generated! starting now...");
-        startQuiz();
+        currentQuestionIndex = 0;
+        score = 0;
+        lives = 3;
+        scoreElement.innerText = "Score: 0";
+        livesElement.innerText = "❤️❤️❤️";
+        showQuestion(); // This removes the "Loading..." text
     } else {
-        alert("Please use the format: Question : Answer");
+        alert("Use this format -> Word : Definition");
     }
 });
-
-function startQuiz() {
-    currentQuestionIndex = 0;
-    score = 0;
-    lives = 3;
-    showQuestion();
-}
 
 function showQuestion() {
     resetState();
     let currentQuestion = questions[currentQuestionIndex];
     questionElement.innerText = currentQuestion.question;
 
-    // Shuffle answers so the correct one isn't always first
-    const shuffledAnswers = currentQuestion.answers.sort(() => Math.random() - 0.5);
+    const shuffledAnswers = [...currentQuestion.answers].sort(() => Math.random() - 0.5);
 
     shuffledAnswers.forEach(answer => {
         const button = document.createElement('button');
         button.innerText = answer.text;
-        if (answer.correct) button.dataset.correct = answer.correct;
+        button.style.margin = "5px";
+        button.style.display = "block";
+        button.style.width = "100%";
+        if (answer.correct) button.dataset.correct = "true";
         button.addEventListener('click', selectAnswer);
         answerButtonsElement.appendChild(button);
     });
@@ -79,20 +82,24 @@ function selectAnswer(e) {
     
     if (isCorrect) {
         selectedButton.style.backgroundColor = "#28a745";
+        selectedButton.style.color = "white";
         score++;
         scoreElement.innerText = "Score: " + score;
     } else {
         selectedButton.style.backgroundColor = "#dc3545";
+        selectedButton.style.color = "white";
         lives--;
-        livesElement.innerText = "❤️".repeat(lives);
+        livesElement.innerText = "❤️".repeat(lives > 0 ? lives : 0);
     }
 
     explanationText.innerText = questions[currentQuestionIndex].explanation;
     explanationContainer.classList.remove('hidden');
 
     if (lives <= 0) {
-        alert("Out of lives! Final Score: " + score);
-        location.reload(); 
+        setTimeout(() => {
+            alert("Game Over! Final Score: " + score);
+            location.reload();
+        }, 500);
     }
 }
 
@@ -101,7 +108,7 @@ nextButton.addEventListener('click', () => {
     if (currentQuestionIndex < questions.length) {
         showQuestion();
     } else {
-        alert("Great job! You finished your custom quiz.");
+        alert("Quiz Finished! Well done.");
         location.reload();
     }
 });
