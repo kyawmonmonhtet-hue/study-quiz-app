@@ -5,43 +5,42 @@ const scoreElement = document.getElementById('score');
 const explanationContainer = document.getElementById('explanation-container');
 const explanationText = document.getElementById('explanation-text');
 const nextButton = document.getElementById('next-btn');
+const noteInput = document.getElementById('note-input');
+const generateBtn = document.getElementById('generate-btn');
 
 let currentQuestionIndex = 0;
 let score = 0;
 let lives = 3;
+let questions = []; // Starts empty like Gizmo!
 
-const questions = [
-    {
-        question: 'Which language is used for web structure?',
-        answers: [
-            { text: 'Python', correct: false },
-            { text: 'HTML', correct: true },
-            { text: 'Java', correct: false },
-            { text: 'C++', correct: false }
-        ],
-        explanation: 'HTML (HyperText Markup Language) is the standard language for creating the structure of web pages.'
-    },
-    {
-        question: 'What does "CPU" stand for?',
-        answers: [
-            { text: 'Central Processing Unit', correct: true },
-            { text: 'Computer Personal Unit', correct: false },
-            { text: 'Central Print Utility', correct: false },
-            { text: 'Control Process Unit', correct: false }
-        ],
-        explanation: 'The CPU is the primary component of a computer that acts as its "brain," performing calculations and instructions.'
-    },
-    {
-        question: 'In Python, how do you output "Hello World"?',
-        answers: [
-            { text: 'echo("Hello World")', correct: false },
-            { text: 'console.log("Hello World")', correct: false },
-            { text: 'print("Hello World")', correct: true },
-            { text: 'printf("Hello World")', correct: false }
-        ],
-        explanation: 'The print() function is used in Python to display text or variables on the screen.'
+// MAGIC FUNCTION: Turns text into Questions
+generateBtn.addEventListener('click', () => {
+    const text = noteInput.value;
+    const lines = text.split('\n');
+    
+    questions = lines.map(line => {
+        const [q, a] = line.split(':');
+        if (q && a) {
+            return {
+                question: `What is ${q.trim()}?`,
+                answers: [
+                    { text: a.trim(), correct: true },
+                    { text: 'A type of software', correct: false },
+                    { text: 'A hardware brand', correct: false },
+                    { text: 'I don't know', correct: false }
+                ],
+                explanation: `${q.trim()} is defined as: ${a.trim()}`
+            };
+        }
+    }).filter(item => item !== undefined);
+
+    if (questions.length > 0) {
+        alert("Quiz Generated! starting now...");
+        startQuiz();
+    } else {
+        alert("Please use the format: Question : Answer");
     }
-];
+});
 
 function startQuiz() {
     currentQuestionIndex = 0;
@@ -55,13 +54,13 @@ function showQuestion() {
     let currentQuestion = questions[currentQuestionIndex];
     questionElement.innerText = currentQuestion.question;
 
-    currentQuestion.answers.forEach(answer => {
+    // Shuffle answers so the correct one isn't always first
+    const shuffledAnswers = currentQuestion.answers.sort(() => Math.random() - 0.5);
+
+    shuffledAnswers.forEach(answer => {
         const button = document.createElement('button');
         button.innerText = answer.text;
-        button.classList.add('btn');
-        if (answer.correct) {
-            button.dataset.correct = answer.correct;
-        }
+        if (answer.correct) button.dataset.correct = answer.correct;
         button.addEventListener('click', selectAnswer);
         answerButtonsElement.appendChild(button);
     });
@@ -79,23 +78,21 @@ function selectAnswer(e) {
     const isCorrect = selectedButton.dataset.correct === "true";
     
     if (isCorrect) {
-        selectedButton.classList.add('correct');
+        selectedButton.style.backgroundColor = "#28a745";
         score++;
         scoreElement.innerText = "Score: " + score;
     } else {
-        selectedButton.classList.add('wrong');
+        selectedButton.style.backgroundColor = "#dc3545";
         lives--;
         livesElement.innerText = "❤️".repeat(lives);
     }
 
-    // Show Explanation
     explanationText.innerText = questions[currentQuestionIndex].explanation;
     explanationContainer.classList.remove('hidden');
 
-    // Check if Game Over
     if (lives <= 0) {
-        alert("Game Over! Your final score: " + score);
-        startQuiz();
+        alert("Out of lives! Final Score: " + score);
+        location.reload(); 
     }
 }
 
@@ -104,9 +101,9 @@ nextButton.addEventListener('click', () => {
     if (currentQuestionIndex < questions.length) {
         showQuestion();
     } else {
-        alert("Quiz Finished! You got " + score + " out of " + questions.length);
-        startQuiz();
+        alert("Great job! You finished your custom quiz.");
+        location.reload();
     }
 });
+           
 
-startQuiz();
