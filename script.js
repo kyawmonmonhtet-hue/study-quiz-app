@@ -1,27 +1,47 @@
+const paragraphInput = document.getElementById('paragraph-input');
+const convertBtn = document.getElementById('convert-btn');
+const noteInput = document.getElementById('note-input');
+const generateBtn = document.getElementById('generate-btn');
+const notesPreviewArea = document.getElementById('notes-preview-area');
 const questionElement = document.getElementById('question');
 const answerButtonsElement = document.getElementById('answer-buttons');
 const livesElement = document.getElementById('lives');
 const scoreElement = document.getElementById('score');
-const explanationContainer = document.getElementById('explanation-container');
-const explanationText = document.getElementById('explanation-text');
-const nextButton = document.getElementById('next-btn');
-const noteInput = document.getElementById('note-input');
-const generateBtn = document.getElementById('generate-btn');
 
+let questions = [];
 let currentQuestionIndex = 0;
 let score = 0;
 let lives = 3;
-let questions = [];
 
-// This function makes the quiz start!
-generateBtn.addEventListener('click', () => {
-    const text = noteInput.value.trim();
-    if (!text) {
-        alert("Please paste some notes first!");
-        return;
+// STEP 1: Turn Paragraph into "Word : Definition"
+convertBtn.addEventListener('click', () => {
+    const text = paragraphInput.value;
+    // This looks for "is" or "means" or "are" to find definitions
+    const sentences = text.split(/[.!?]/); 
+    let autoNotes = "";
+
+    sentences.forEach(sentence => {
+        if (sentence.toLowerCase().includes(" is ")) {
+            let parts = sentence.split(/ is /i);
+            autoNotes += `${parts[0].trim()} : ${parts[1].trim()}\n`;
+        } else if (sentence.toLowerCase().includes(" are ")) {
+            let parts = sentence.split(/ are /i);
+            autoNotes += `${parts[0].trim()} : ${parts[1].trim()}\n`;
+        }
+    });
+
+    if (autoNotes) {
+        noteInput.value = autoNotes;
+        notesPreviewArea.classList.remove('hidden');
+        alert("Found some definitions! Check them below.");
+    } else {
+        alert("Try using sentences like: 'A Byte is 8 bits.'");
     }
+});
 
-    const lines = text.split('\n');
+// STEP 2: The Quiz Logic (Same as before)
+generateBtn.addEventListener('click', () => {
+    const lines = noteInput.value.trim().split('\n');
     questions = lines.map(line => {
         const parts = line.split(':');
         if (parts.length >= 2) {
@@ -29,11 +49,11 @@ generateBtn.addEventListener('click', () => {
                 question: `What is ${parts[0].trim()}?`,
                 answers: [
                     { text: parts[1].trim(), correct: true },
+                    { text: 'A computer brand', correct: false },
                     { text: 'A type of software', correct: false },
-                    { text: 'A hardware component', correct: false },
-                    { text: 'None of the above', correct: false }
+                    { text: 'Input data', correct: false }
                 ],
-                explanation: `${parts[0].trim()} means: ${parts[1].trim()}`
+                explanation: parts[1].trim()
             };
         }
     }).filter(q => q !== undefined);
@@ -42,11 +62,7 @@ generateBtn.addEventListener('click', () => {
         currentQuestionIndex = 0;
         score = 0;
         lives = 3;
-        scoreElement.innerText = "Score: 0";
-        livesElement.innerText = "❤️❤️❤️";
-        showQuestion(); // This removes the "Loading..." text
-    } else {
-        alert("Use this format -> Word : Definition");
+        showQuestion();
     }
 });
 
@@ -54,15 +70,14 @@ function showQuestion() {
     resetState();
     let currentQuestion = questions[currentQuestionIndex];
     questionElement.innerText = currentQuestion.question;
-
     const shuffledAnswers = [...currentQuestion.answers].sort(() => Math.random() - 0.5);
 
     shuffledAnswers.forEach(answer => {
         const button = document.createElement('button');
         button.innerText = answer.text;
-        button.style.margin = "5px";
         button.style.display = "block";
         button.style.width = "100%";
+        button.style.margin = "5px 0";
         if (answer.correct) button.dataset.correct = "true";
         button.addEventListener('click', selectAnswer);
         answerButtonsElement.appendChild(button);
@@ -70,47 +85,35 @@ function showQuestion() {
 }
 
 function resetState() {
-    explanationContainer.classList.add('hidden');
     while (answerButtonsElement.firstChild) {
         answerButtonsElement.removeChild(answerButtonsElement.firstChild);
     }
 }
 
 function selectAnswer(e) {
-    const selectedButton = e.target;
-    const isCorrect = selectedButton.dataset.correct === "true";
-    
+    const isCorrect = e.target.dataset.correct === "true";
     if (isCorrect) {
-        selectedButton.style.backgroundColor = "#28a745";
-        selectedButton.style.color = "white";
+        e.target.style.backgroundColor = "#28a745";
         score++;
         scoreElement.innerText = "Score: " + score;
     } else {
-        selectedButton.style.backgroundColor = "#dc3545";
-        selectedButton.style.color = "white";
+        e.target.style.backgroundColor = "#dc3545";
         lives--;
-        livesElement.innerText = "❤️".repeat(lives > 0 ? lives : 0);
+        livesElement.innerText = "❤️".repeat(lives);
     }
 
-    explanationText.innerText = questions[currentQuestionIndex].explanation;
-    explanationContainer.classList.remove('hidden');
-
-    if (lives <= 0) {
-        setTimeout(() => {
-            alert("Game Over! Final Score: " + score);
+    setTimeout(() => {
+        currentQuestionIndex++;
+        if (lives <= 0) {
+            alert("GameOver! Try again.");
             location.reload();
-        }, 500);
-    }
+        } else if (currentQuestionIndex < questions.length) {
+            showQuestion();
+        } else {
+            alert("Quiz Complete! Score: " + score);
+            location.reload();
+        }
+    }, 1000);
 }
-
-nextButton.addEventListener('click', () => {
-    currentQuestionIndex++;
-    if (currentQuestionIndex < questions.length) {
-        showQuestion();
-    } else {
-        alert("Quiz Finished! Well done.");
-        location.reload();
-    }
-});
-           
+        
 
